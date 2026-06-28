@@ -3,18 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Services\TwilioOtpService;
+use App\Models\Otp;
+use App\Services\OtpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
-use Throwable;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly TwilioOtpService $otpService)
+    public function __construct(private readonly OtpService $otpService)
     {
     }
 
@@ -30,21 +30,17 @@ class AuthController extends Controller
             'image' => ['nullable', 'string', 'max:255'],
         ]);
 
-        try {
-            $user = DB::transaction(function () use ($data): User {
+        [$user, $otp] = DB::transaction(function () use ($data): array {
                 $user = User::query()->create($data);
+                $otp = $this->otpService->generate($user->phone, OtpService::REGISTER);
 
-                $this->otpService->send($user->phone, TwilioOtpService::REGISTER);
-
-                return $user;
+                return [$user, $otp];
             });
-        } catch (Throwable $exception) {
-            return $this->otpFailureResponse($exception);
-        }
 
         return response()->json([
-            'message' => 'Registered successfully. Please verify your phone number.',
+            'message' => 'Registered successfully. Please verify your phone number with the generated OTP.',
             'user' => $user,
+            'otp' => $this->otpResponse($otp),
         ], 201);
     }
 
@@ -65,7 +61,7 @@ class AuthController extends Controller
 
         try {
             DB::transaction(function () use ($data, $user): void {
-                $this->otpService->verify($data['phone'], $data['code'], TwilioOtpService::REGISTER);
+                $this->otpService->verify($data['phone'], $data['code'], OtpService::REGISTER);
 
                 $user->forceFill([
                     'phone_verified_at' => now(),
@@ -125,14 +121,17 @@ class AuthController extends Controller
         ]);
 
         try {
-            $this->otpService->send($data['phone'], TwilioOtpService::FORGOT_PASSWORD);
-        } catch (Throwable $exception) {
-            return $this->otpFailureResponse($exception);
-        }
+            $otp = $this->otpService->generate($data['phone'], OtpService::FORGOT_PASSWORD);
 
-        return response()->json([
-            'message' => 'Password reset OTP sent successfully.',
-        ]);
+            return response()->json([
+                'message' => 'Password reset OTP generated successfully.',
+                'otp' => $this->otpResponse($otp),
+            ]);
+        } catch (RuntimeException $exception) {
+            throw ValidationException::withMessages([
+                'phone' => [$exception->getMessage()],
+            ]);
+        }
     }
 
     public function verifyForgotPasswordOtp(Request $request): JsonResponse
@@ -143,7 +142,7 @@ class AuthController extends Controller
         ]);
 
         try {
-            $this->otpService->verify($data['phone'], $data['code'], TwilioOtpService::FORGOT_PASSWORD, false);
+            $this->otpService->verify($data['phone'], $data['code'], OtpService::FORGOT_PASSWORD, false);
         } catch (RuntimeException $exception) {
             throw ValidationException::withMessages([
                 'code' => [$exception->getMessage()],
@@ -195,11 +194,12 @@ class AuthController extends Controller
         ]);
     }
 
-    private function otpFailureResponse(Throwable $exception): JsonResponse
+    private function otpResponse(Otp $otp): array
     {
-        return response()->json([
-            'message' => 'Unable to send OTP.',
-            'error' => $exception->getMessage(),
-        ], 502);
+        return [
+            'code' => $otp->code,
+            'type' => $otp->type,
+            'expires_at' => $otp->expires_at,
+        ];
     }
 }

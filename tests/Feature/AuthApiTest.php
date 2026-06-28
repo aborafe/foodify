@@ -2,18 +2,12 @@
 
 use App\Models\Otp;
 use App\Models\User;
-use App\Services\TwilioOtpService;
+use App\Services\OtpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 it('registers an unverified user and requests a register otp', function (): void {
-    $this->mock(TwilioOtpService::class)
-        ->shouldReceive('send')
-        ->once()
-        ->with('+201001234567', TwilioOtpService::REGISTER)
-        ->andReturn(new Otp());
-
     $response = $this->postJson('/api/auth/register', [
         'full_name' => 'Foodify User',
         'phone' => '+201001234567',
@@ -23,11 +17,18 @@ it('registers an unverified user and requests a register otp', function (): void
     ]);
 
     $response->assertCreated()
-        ->assertJsonPath('user.phone', '+201001234567');
+        ->assertJsonPath('user.phone', '+201001234567')
+        ->assertJsonStructure(['otp' => ['code', 'type', 'expires_at']]);
 
     $this->assertDatabaseHas('users', [
         'phone' => '+201001234567',
         'phone_verified_at' => null,
+    ]);
+
+    $this->assertDatabaseHas('otps', [
+        'phone' => '+201001234567',
+        'type' => OtpService::REGISTER,
+        'is_used' => false,
     ]);
 });
 
@@ -70,7 +71,7 @@ it('verifies register otp and marks phone as verified', function (): void {
     Otp::query()->create([
         'phone' => '+201001234570',
         'code' => '123456',
-        'type' => TwilioOtpService::REGISTER,
+        'type' => OtpService::REGISTER,
         'expires_at' => now()->addMinutes(5),
     ]);
 
@@ -97,7 +98,7 @@ it('resets password only after forgot password otp is verified', function (): vo
     Otp::query()->create([
         'phone' => '+201001234571',
         'code' => '654321',
-        'type' => TwilioOtpService::FORGOT_PASSWORD,
+        'type' => OtpService::FORGOT_PASSWORD,
         'expires_at' => now()->addMinutes(5),
         'verified_at' => now(),
         'is_used' => false,
@@ -121,4 +122,3 @@ it('resets password only after forgot password otp is verified', function (): vo
         'is_used' => true,
     ]);
 });
-
