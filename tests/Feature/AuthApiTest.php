@@ -1,5 +1,6 @@
 <?php
 
+use App\Contracts\SmsServiceInterface;
 use App\Models\Otp;
 use App\Models\User;
 use App\Services\OtpService;
@@ -8,6 +9,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 it('registers an unverified user and requests a register otp', function (): void {
+    $this->mock(SmsServiceInterface::class)
+        ->shouldReceive('send')
+        ->once()
+        ->withArgs(fn (string $phone, string $message): bool => $phone === '+201001234567'
+            && str_contains($message, 'Your Foodify OTP code is: '));
+
     $response = $this->postJson('/api/auth/register', [
         'full_name' => 'Foodify User',
         'phone' => '+201001234567',
@@ -18,7 +25,8 @@ it('registers an unverified user and requests a register otp', function (): void
 
     $response->assertCreated()
         ->assertJsonPath('user.phone', '+201001234567')
-        ->assertJsonStructure(['otp' => ['code', 'type', 'expires_at']]);
+        ->assertJsonStructure(['otp' => ['type', 'expires_at']])
+        ->assertJsonMissingPath('otp.code');
 
     $this->assertDatabaseHas('users', [
         'phone' => '+201001234567',

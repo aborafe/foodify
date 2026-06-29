@@ -2,21 +2,25 @@
 
 namespace App\Services;
 
+use App\Contracts\OtpServiceInterface;
+use App\Contracts\SmsServiceInterface;
 use App\Models\Otp;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
-class OtpService
+class OtpService implements OtpServiceInterface
 {
     public const REGISTER = 'register';
 
     public const FORGOT_PASSWORD = 'forgot_password';
 
+    public function __construct(private readonly SmsServiceInterface $smsService) {}
+
     public function generate(string $phone, string $type): Otp
     {
         $this->ensureValidType($type);
 
-        return DB::transaction(function () use ($phone, $type): Otp {
+        $otp = DB::transaction(function () use ($phone, $type): Otp {
             Otp::query()
                 ->where('phone', $phone)
                 ->where('type', $type)
@@ -31,6 +35,16 @@ class OtpService
                 'is_used' => false,
             ]);
         });
+
+        try {
+            $this->smsService->send($phone, "Your Foodify OTP code is: {$otp->code}");
+        } catch (RuntimeException $exception) {
+            $otp->forceFill(['is_used' => true])->save();
+
+            throw $exception;
+        }
+
+        return $otp;
     }
 
     public function verify(string $phone, string $code, string $type, bool $markAsUsed = true): Otp
