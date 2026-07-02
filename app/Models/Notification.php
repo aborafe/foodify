@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Contracts\AdminSearchable;
+use App\Models\Concerns\AdminSearchableModel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,9 +17,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'image',
     'is_read',
 ])]
-class Notification extends Model
+class Notification extends Model implements AdminSearchable
 {
-    use HasFactory;
+    use AdminSearchableModel, HasFactory;
+
+    protected static array $adminSearchableColumns = ['title', 'body', 'type'];
+
+    protected static string $adminSearchTitleColumn = 'title';
+
+    protected static string $adminSearchRouteName = 'admin.notifications';
 
     public function user(): BelongsTo
     {

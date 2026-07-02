@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\CartItem;
 use App\Models\Category;
+use App\Models\Employee;
 use App\Models\Favorite;
 use App\Models\Meal;
 use App\Models\Notification;
@@ -12,6 +13,7 @@ use App\Models\OrderItem;
 use App\Models\Otp;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
+use App\Models\SavedReport;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -39,6 +41,8 @@ class DatabaseSeeder extends Seeder
         $this->seedCartItems($users, $meals);
         $orders = $this->seedOrders($users, $meals, $paymentMethods);
         $this->seedNotifications($users, $orders);
+        $this->seedSavedReports();
+        $this->seedEmployees();
     }
 
     private function clearFoodifyTables(): void
@@ -50,6 +54,7 @@ class DatabaseSeeder extends Seeder
             'payments',
             'order_items',
             'orders',
+            'saved_reports',
             'payment_methods',
             'cart_items',
             'favorites',
@@ -57,11 +62,68 @@ class DatabaseSeeder extends Seeder
             'categories',
             'otps',
             'users',
+            'employees',
         ] as $table) {
             DB::table($table)->truncate();
         }
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1');
+    }
+
+    private function seedEmployees(): void
+    {
+        Employee::query()->create([
+            'full_name' => 'Ahmed Mohamed',
+            'email' => 'admin@foodify.test',
+            'phone' => '+201001112223',
+            'role' => 'admin',
+            'password' => Hash::make('password123'),
+            'email_verified_at' => now(),
+            'is_active' => true,
+        ]);
+
+        Employee::query()->create([
+            'full_name' => 'Foodify Cashier',
+            'email' => 'cashier@foodify.test',
+            'phone' => '+201004445556',
+            'role' => 'cashier',
+            'password' => Hash::make('password123'),
+            'email_verified_at' => now(),
+            'is_active' => true,
+        ]);
+    }
+
+    private function seedSavedReports(): void
+    {
+        collect([
+            [
+                'name' => 'Monthly Revenue Summary',
+                'metric' => 'sales',
+                'date_range' => 'May 01, 2024 - May 31, 2024',
+                'export_format' => 'pdf',
+                'included_sections' => ['Revenue trend', 'Order status mix', 'Top selling meals'],
+                'status' => 'active',
+            ],
+            [
+                'name' => 'Customer Growth Report',
+                'metric' => 'customers',
+                'date_range' => 'Last 30 Days',
+                'export_format' => 'xlsx',
+                'included_sections' => ['New customers', 'Repeat customers', 'Average order value'],
+                'status' => 'active',
+            ],
+            [
+                'name' => 'Menu Performance Export',
+                'metric' => 'meals',
+                'date_range' => 'This Quarter',
+                'export_format' => 'csv',
+                'included_sections' => ['Best sellers', 'Revenue share', 'Low performers'],
+                'status' => 'draft',
+            ],
+        ])->each(fn (array $report): SavedReport => SavedReport::query()->create([
+            ...$report,
+            'generated_at' => now()->subDays(random_int(1, 10)),
+        ]));
     }
 
     /**

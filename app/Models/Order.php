@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Contracts\AdminSearchable;
+use App\Models\Concerns\AdminSearchableModel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,15 +17,23 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'payment_method_id',
     'subtotal',
     'delivery_fee',
+    'manual_adjustment',
     'total',
     'payment_status',
     'status',
     'delivery_address',
+    'notes',
     'estimated_delivery_time',
 ])]
-class Order extends Model
+class Order extends Model implements AdminSearchable
 {
-    use HasFactory;
+    use AdminSearchableModel, HasFactory;
+
+    protected static array $adminSearchableColumns = ['order_number', 'status', 'payment_status', 'delivery_address', 'notes'];
+
+    protected static string $adminSearchTitleColumn = 'order_number';
+
+    protected static string $adminSearchRouteName = 'admin.orders';
 
     public function user(): BelongsTo
     {
@@ -55,6 +65,7 @@ class Order extends Model
         return [
             'subtotal' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
+            'manual_adjustment' => 'decimal:2',
             'total' => 'decimal:2',
             'estimated_delivery_time' => 'integer',
         ];

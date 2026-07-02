@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Contracts\AdminSearchable;
+use App\Models\Concerns\AdminSearchableModel;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -23,10 +25,16 @@ use Laravel\Sanctum\HasApiTokens;
     'is_active',
 ])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements AdminSearchable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use AdminSearchableModel, HasApiTokens, HasFactory, Notifiable;
+
+    protected static array $adminSearchableColumns = ['full_name', 'phone', 'email', 'address'];
+
+    protected static string $adminSearchTitleColumn = 'full_name';
+
+    protected static string $adminSearchRouteName = 'admin.customers.show';
 
     public function otps(): HasMany
     {
