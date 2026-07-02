@@ -219,11 +219,11 @@
                 </div>
                 <div class="notification-list">
                     @forelse ($recentNotifications as $notification)
-                        <article>
+                        <a class="dashboard-notification-link" href="{{ $notification->admin_url ?: route('admin.notifications') }}">
                             <span class="notif-icon green"><svg><use href="#icon-orders"></use></svg></span>
                             <strong>{{ $notification->title }}</strong>
                             <small>{{ $notification->created_at?->diffForHumans() }}</small>
-                        </article>
+                        </a>
                     @empty
                         <article><span class="notif-icon green"><svg><use href="#icon-orders"></use></svg></span><strong>No notifications yet</strong><small>Now</small></article>
                     @endforelse

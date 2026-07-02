@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\UpdateOrderRequest;
 use App\Models\Meal;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\Admin\DashboardNotificationService;
 use App\Services\Admin\OrderExportService;
 use App\Services\Admin\OrderFilterService;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +23,7 @@ class OrderController extends Controller
     public function __construct(
         private OrderFilterService $orderFilter,
         private OrderExportService $orderExport,
+        private DashboardNotificationService $dashboardNotifications,
     ) {}
 
     public function index(Request $request): View
@@ -58,7 +60,10 @@ class OrderController extends Controller
 
     public function store(StoreOrderRequest $request): RedirectResponse
     {
-        $this->persistOrder(new Order(), $request->validated());
+        $order = new Order();
+
+        $this->persistOrder($order, $request->validated());
+        $this->dashboardNotifications->orderCreated($order);
 
         return redirect()
             ->route('admin.orders')

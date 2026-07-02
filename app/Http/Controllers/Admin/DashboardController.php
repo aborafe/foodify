@@ -22,7 +22,12 @@ class DashboardController extends Controller
                 ->latest()
                 ->take(5)
                 ->get(),
-            'recentNotifications' => Notification::query()->latest()->take(5)->get(),
+            'recentNotifications' => Notification::query()
+                ->where('is_admin_visible', true)
+                ->whereIn('admin_context', ['order', 'meal'])
+                ->latest()
+                ->take(5)
+                ->get(),
         ]);
     }
 }

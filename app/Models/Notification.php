@@ -16,6 +16,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'type',
     'image',
     'is_read',
+    'is_admin_visible',
+    'admin_context',
+    'admin_url',
 ])]
 class Notification extends Model implements AdminSearchable
 {
@@ -41,6 +44,7 @@ class Notification extends Model implements AdminSearchable
     {
         return [
             'is_read' => 'boolean',
+            'is_admin_visible' => 'boolean',
         ];
     }
 }

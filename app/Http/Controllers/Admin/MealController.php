@@ -7,12 +7,16 @@ use App\Http\Requests\Admin\StoreMealRequest;
 use App\Http\Requests\Admin\UpdateMealRequest;
 use App\Models\Category;
 use App\Models\Meal;
+use App\Services\Admin\DashboardNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class MealController extends Controller
 {
+    public function __construct(private readonly DashboardNotificationService $dashboardNotifications) {}
+
     public function index(Request $request): View
     {
         $categories = Category::query()
@@ -60,7 +64,9 @@ class MealController extends Controller
 
     public function store(StoreMealRequest $request): RedirectResponse
     {
-        Meal::query()->create($this->preparedData($request->validated()));
+        $meal = Meal::query()->create($this->preparedData($request->validated(), $request));
+
+        $this->dashboardNotifications->mealCreated($meal);
 
         return redirect()
             ->route('admin.products')
@@ -79,7 +85,9 @@ class MealController extends Controller
 
     public function update(UpdateMealRequest $request, Meal $meal): RedirectResponse
     {
-        $meal->update($this->preparedData($request->validated()));
+        $meal->update($this->preparedData($request->validated(), $request, $meal));
+
+        $this->dashboardNotifications->mealUpdated($meal->fresh());
 
         return redirect()
             ->route('admin.products')
@@ -88,7 +96,12 @@ class MealController extends Controller
 
     public function destroy(Meal $meal): RedirectResponse
     {
+        $notificationMeal = $meal->replicate();
+        $notificationMeal->name = $meal->name;
+
         $meal->delete();
+
+        $this->dashboardNotifications->mealDeleted($notificationMeal);
 
         return redirect()
             ->route('admin.products')
@@ -99,8 +112,22 @@ class MealController extends Controller
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    private function preparedData(array $data): array
+    private function preparedData(array $data, Request $request, ?Meal $meal = null): array
     {
+        unset($data['image']);
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('meals', 'public');
+
+            if ($meal?->image !== null) {
+                $this->deleteStoredMealImage($meal->image);
+            }
+
+            $data['image'] = Storage::url($path);
+        } elseif ($meal !== null) {
+            $data['image'] = $meal->image;
+        }
+
         $data['nutrition'] = filled($data['nutrition'] ?? null) ? json_decode($data['nutrition'], true) : null;
         $data['ingredients'] = filled($data['ingredients'] ?? null) ? json_decode($data['ingredients'], true) : null;
         $data['is_recommended'] = (bool) ($data['is_recommended'] ?? false);
@@ -108,5 +135,20 @@ class MealController extends Controller
         $data['rating'] = $data['rating'] ?? 0;
 
         return $data;
+    }
+
+    private function deleteStoredMealImage(string $image): void
+    {
+        $storagePrefix = '/storage/';
+
+        if (! str_starts_with($image, $storagePrefix)) {
+            return;
+        }
+
+        $path = substr($image, strlen($storagePrefix));
+
+        if (str_starts_with($path, 'meals/')) {
+            Storage::disk('public')->delete($path);
+        }
     }
 }

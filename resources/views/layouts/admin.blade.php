@@ -58,6 +58,7 @@
                 <a class="nav-item {{ request()->routeIs('admin.orders') ? 'active' : '' }}" href="{{ route('admin.orders') }}"><span class="nav-icon"><svg><use href="#icon-orders"></use></svg></span><span class="nav-label">Orders Management</span></a>
                 @if($employee?->isAdmin())
                 <a class="nav-item {{ request()->routeIs('admin.products') ? 'active' : '' }}" href="{{ route('admin.products') }}"><span class="nav-icon"><svg><use href="#icon-products"></use></svg></span><span class="nav-label">Products Management</span></a>
+                <a class="nav-item {{ request()->routeIs('admin.categories') ? 'active' : '' }}" href="{{ route('admin.categories') }}"><span class="nav-icon"><svg><use href="#icon-dashboard"></use></svg></span><span class="nav-label">Categories Management</span></a>
                 <a class="nav-item {{ request()->routeIs('admin.customers') ? 'active' : '' }}" href="{{ route('admin.customers') }}"><span class="nav-icon"><svg><use href="#icon-users"></use></svg></span><span class="nav-label">Users / Customers</span></a>
                 <a class="nav-item {{ request()->routeIs('admin.reports') ? 'active' : '' }}" href="{{ route('admin.reports') }}"><span class="nav-icon"><svg><use href="#icon-chart"></use></svg></span><span class="nav-label">Reports & Analytics</span></a>
                 <a class="nav-item {{ request()->routeIs('admin.notifications') ? 'active' : '' }}" href="{{ route('admin.notifications') }}"><span class="nav-icon"><svg><use href="#icon-bell"></use></svg></span><span class="nav-label">Notifications</span></a>
@@ -109,16 +110,16 @@
                             </div>
                             <div class="notification-dropdown-list">
                                 @forelse($headerNotifications as $notification)
-                                    <article class="notification-dropdown-item {{ $notification->is_read ? '' : 'is-unread' }}">
-                                        <span>{{ str($notification->type)->replace('_', ' ')->headline() }}</span>
+                                    <a class="notification-dropdown-item {{ $notification->is_read ? '' : 'is-unread' }}" href="{{ $notification->admin_url ?: route('admin.notifications') }}">
+                                        <span>{{ str($notification->admin_context)->headline() }}</span>
                                         <strong>{{ $notification->title }}</strong>
                                         <p>{{ str($notification->body)->limit(82) }}</p>
                                         <small>{{ $notification->created_at?->diffForHumans() }}</small>
-                                    </article>
+                                    </a>
                                 @empty
                                     <article class="notification-dropdown-empty">
                                         <strong>No notifications</strong>
-                                        <p>There are no non-order notifications yet.</p>
+                                        <p>There are no order or meal notifications yet.</p>
                                     </article>
                                 @endforelse
                             </div>

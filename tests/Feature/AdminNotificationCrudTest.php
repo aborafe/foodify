@@ -94,3 +94,44 @@ it('lets cashiers view notifications but not manage them', function (): void {
         ->delete(route('admin.notifications.destroy', $notification))
         ->assertForbidden();
 });
+
+it('shows only order and meal dashboard notifications in the header', function (): void {
+    $admin = adminEmployeeForNotifications();
+    $customer = User::factory()->create();
+
+    Notification::query()->create([
+        'user_id' => $customer->id,
+        'title' => 'Manual customer offer',
+        'body' => 'This should stay out of the dashboard bell.',
+        'type' => 'offer',
+        'is_admin_visible' => false,
+    ]);
+
+    Notification::query()->create([
+        'user_id' => $customer->id,
+        'title' => 'New order received',
+        'body' => 'Order FDADMIN1001 from customer is waiting for review.',
+        'type' => 'order',
+        'is_admin_visible' => true,
+        'admin_context' => 'order',
+        'admin_url' => route('admin.orders', ['search' => 'FDADMIN1001']),
+    ]);
+
+    Notification::query()->create([
+        'user_id' => null,
+        'title' => 'Meal updated',
+        'body' => 'Meal Salmon Bowl was updated in the products catalog.',
+        'type' => 'system',
+        'is_admin_visible' => true,
+        'admin_context' => 'meal',
+        'admin_url' => route('admin.products', ['search' => 'Salmon Bowl']),
+    ]);
+
+    $this->actingAs($admin, 'employee')
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSee('New order received')
+        ->assertSee('Meal updated')
+        ->assertSee(route('admin.orders', ['search' => 'FDADMIN1001']), false)
+        ->assertDontSee('Manual customer offer');
+});

@@ -133,6 +133,13 @@ it('manages cart items and creates an order during checkout', function (): void 
         'amount' => 330,
         'status' => 'pending',
     ]);
+    $this->assertDatabaseHas('notifications', [
+        'user_id' => $user->id,
+        'title' => 'New order received',
+        'type' => 'order',
+        'is_admin_visible' => true,
+        'admin_context' => 'order',
+    ]);
 });
 
 it('lists and cancels customer orders', function (): void {
@@ -183,4 +190,3 @@ it('updates profile and marks notifications as read', function (): void {
         ->assertOk()
         ->assertJsonPath('notification.is_read', true);
 });
-

@@ -139,6 +139,8 @@ svg text { stroke: none; }
 .notification-dropdown-list { display: grid; gap: 8px; }
 .notification-dropdown-item,
 .notification-dropdown-empty { display: grid; gap: 5px; padding: 11px 12px; border: 1px solid #eef1ef; border-radius: 12px; background: #f8fbf9; }
+.notification-dropdown-item { color: inherit; text-decoration: none; transition: border-color .2s ease, background .2s ease, transform .2s ease; }
+.notification-dropdown-item:hover { border-color: #9bddaa; background: #f3fbf5; transform: translateY(-1px); }
 .notification-dropdown-item.is-unread { border-color: #bfe7c7; background: #effaf1; }
 .notification-dropdown-item span { color: var(--green); font-size: 11px; font-weight: 850; text-transform: uppercase; }
 .notification-dropdown-item strong,
@@ -291,6 +293,31 @@ td:first-child a { color: #0c7f28; text-decoration: underline; text-decoration-c
     .crud-filter-actions .crud-button { width: 100%; }
 }
 .product-thumb { display: inline-grid; place-items: center; width: 34px; height: 34px; margin-right: 10px; border-radius: 999px; background: #eef8ef; font-size: 18px; vertical-align: middle; }
+.table-entity { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
+.table-entity .product-thumb { margin-right: 0; }
+.table-entity strong { font-weight: 900; }
+.table-thumb {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid #dfece3;
+    background: #f3faf5;
+}
+.table-thumb.large {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+}
+.detail-image {
+    width: 100%;
+    max-width: 220px;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-radius: 14px;
+    border: 1px solid #dfece3;
+}
 
 .analytics-panel { grid-column: 1 / -1; }
 .analytics-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 28px; }
@@ -301,7 +328,11 @@ td:first-child a { color: #0c7f28; text-decoration: underline; text-decoration-c
 
 .notifications-panel { padding-bottom: 14px; }
 .notification-list, .alert-list { display: grid; gap: 0; }
-.notification-list article { display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 12px; min-height: 58px; border-left: 3px solid #e6f2e9; }
+.notification-list article,
+.dashboard-notification-link { display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 12px; min-height: 58px; border-left: 3px solid #e6f2e9; }
+.dashboard-notification-link { color: inherit; text-decoration: none; transition: border-color .2s ease; }
+.dashboard-notification-link:hover { border-left-color: var(--green); }
+.dashboard-notification-link:hover strong { color: var(--green); }
 .notif-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 11px; font-size: 18px; font-weight: 800; }
 .notif-icon.green { color: var(--green); background: var(--green-soft); }
 .notif-icon.amber { color: #f59e0b; background: #fff4d8; }
@@ -392,6 +423,35 @@ td:first-child a { color: #0c7f28; text-decoration: underline; text-decoration-c
 .form-field textarea:focus { border-color: #9bddaa; background: #fff; box-shadow: 0 0 0 4px rgba(17,155,50,.09); }
 .form-field small,
 .auth-field small { color: var(--red); font-size: 12px; font-weight: 800; }
+.upload-field {
+    padding: 14px;
+    border: 1px dashed #bde7c6;
+    border-radius: 14px;
+    background: #f8fcf9;
+}
+.upload-field > span:first-child { color: var(--text); font-size: 13px; font-weight: 950; }
+.upload-field small { color: var(--muted); line-height: 1.6; }
+.upload-field input[type="file"] {
+    padding: 10px;
+    cursor: pointer;
+}
+.current-upload {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border: 1px solid #e5efe8;
+    border-radius: 13px;
+    background: #fff;
+}
+.current-upload img {
+    width: 64px;
+    height: 64px;
+    flex: 0 0 64px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid #dfece3;
+}
 .checkbox-field { display: inline-flex; grid-column: 1 / -1; align-items: center; gap: 10px; min-height: 42px; }
 .checkbox-field input { width: 16px; min-height: 16px; accent-color: var(--green); }
 .product-form-grid { gap: 16px; }

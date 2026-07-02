@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\PaymentMethod;
+use App\Services\Admin\DashboardNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
 {
+    public function __construct(private readonly DashboardNotificationService $dashboardNotifications) {}
+
     public function __invoke(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -75,6 +78,8 @@ class CheckoutController extends Controller
 
             return $order->load(['orderItems', 'payment', 'paymentMethod']);
         });
+
+        $this->dashboardNotifications->orderCreated($order);
 
         return response()->json([
             'message' => 'Order placed successfully.',

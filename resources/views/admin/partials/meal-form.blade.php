@@ -24,7 +24,18 @@
     <label class="form-field"><span>التصنيف</span><select name="category_id">@foreach($categories as $category)<option value="{{ $category->id }}" @selected((int) old('category_id', $meal?->category_id) === $category->id)>{{ $category->name }}</option>@endforeach</select></label>
     <label class="form-field"><span>السعر</span><input name="price" type="number" min="0" step="0.01" value="{{ old('price', $meal?->price) }}"></label>
     <label class="form-field"><span>التقييم</span><input name="rating" type="number" min="0" max="5" step="0.1" value="{{ old('rating', $meal?->rating ?? 0) }}"></label>
-    <label class="form-field full"><span>رابط الصورة</span><input name="image" value="{{ old('image', $meal?->image) }}"></label>
+    <label class="form-field full upload-field">
+        <span>صورة الوجبة</span>
+        @if($meal?->image)
+            <span class="current-upload">
+                <img src="{{ $meal->image }}" alt="{{ $meal->name }}">
+                <small>اترك الحقل فارغًا للاحتفاظ بالصورة الحالية.</small>
+            </span>
+        @else
+            <small>ارفع صورة JPG أو PNG أو WEBP بحجم لا يتجاوز 2MB.</small>
+        @endif
+        <input name="image" type="file" accept="image/jpeg,image/png,image/webp">
+    </label>
     <label class="form-field full"><span>الوصف</span><textarea name="description">{{ old('description', $meal?->description) }}</textarea></label>
 
     <section class="json-editor-card full" data-nutrition-editor>

@@ -27,7 +27,7 @@ class StoreMealRequest extends FormRequest
             'category_id' => ['required', 'integer', Rule::exists('categories', 'id')],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'image' => ['nullable', 'url', 'max:255'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'price' => ['required', 'numeric', 'min:0'],
             'nutrition' => ['nullable', 'json'],
             'ingredients' => ['nullable', 'json'],

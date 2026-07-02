@@ -31,15 +31,17 @@ class AppServiceProvider extends ServiceProvider
     {
         View::composer('layouts.admin', function ($view): void {
             $notifications = Notification::query()
-                ->where('type', '!=', 'order')
+                ->where('is_admin_visible', true)
+                ->whereIn('admin_context', ['order', 'meal'])
                 ->latest()
                 ->take(6)
-                ->get(['id', 'title', 'body', 'type', 'is_read', 'created_at']);
+                ->get(['id', 'title', 'body', 'type', 'is_read', 'admin_context', 'admin_url', 'created_at']);
 
             $view->with([
                 'headerNotifications' => $notifications,
                 'unreadNotificationCount' => Notification::query()
-                    ->where('type', '!=', 'order')
+                    ->where('is_admin_visible', true)
+                    ->whereIn('admin_context', ['order', 'meal'])
                     ->where('is_read', false)
                     ->count(),
             ]);

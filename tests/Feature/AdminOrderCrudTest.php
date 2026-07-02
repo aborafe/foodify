@@ -3,6 +3,7 @@
 use App\Models\Category;
 use App\Models\Employee;
 use App\Models\Meal;
+use App\Models\Notification;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
@@ -89,6 +90,14 @@ it('creates a dashboard order with selected meals as order items', function (): 
         'meal_name' => 'Grilled Chicken Bowl',
         'quantity' => 2,
     ]);
+
+    $notification = Notification::query()
+        ->where('title', 'New order received')
+        ->where('admin_context', 'order')
+        ->firstOrFail();
+
+    expect($notification->is_admin_visible)->toBeTrue()
+        ->and($notification->admin_url)->toContain(route('admin.orders', ['search' => $order->order_number], false));
 });
 
 it('shows order items in the dashboard order view markup', function (): void {

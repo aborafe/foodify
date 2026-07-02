@@ -99,7 +99,7 @@
     <div class="modal-backdrop" id="productCreateModal" aria-hidden="true">
         <section class="crud-modal wide" role="dialog" aria-modal="true" aria-labelledby="productCreateTitle">
             <div class="modal-header"><div><h2 id="productCreateTitle">Add Meal</h2><p>Create a product in the meals catalog.</p></div><button class="modal-close" data-modal-close type="button">×</button></div>
-            <form class="crud-form" action="{{ route('admin.products.store') }}" method="POST">
+            <form class="crud-form" action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @include('admin.partials.meal-form', ['meal' => null, 'categories' => $categories])
                 <div class="modal-footer"><button class="crud-button ghost" data-modal-close type="button">Cancel</button><button class="crud-button primary" type="submit">Save Meal</button></div>
@@ -118,7 +118,7 @@
         <div class="modal-backdrop" id="productEditModal{{ $meal->id }}" aria-hidden="true">
             <section class="crud-modal wide" role="dialog" aria-modal="true" aria-labelledby="productEditTitle{{ $meal->id }}">
                 <div class="modal-header"><div><h2 id="productEditTitle{{ $meal->id }}">Edit Meal</h2><p>Update product information.</p></div><button class="modal-close" data-modal-close type="button">×</button></div>
-                <form class="crud-form" action="{{ route('admin.products.update', $meal) }}" method="POST">
+                <form class="crud-form" action="{{ route('admin.products.update', $meal) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
                     @include('admin.partials.meal-form', ['meal' => $meal, 'categories' => $categories])

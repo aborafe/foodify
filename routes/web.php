@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmployeeController;
@@ -47,6 +48,15 @@ Route::middleware(['auth:employee', 'employee.role:admin,cashier'])->prefix('adm
                 'store' => 'products.store',
                 'update' => 'products.update',
                 'destroy' => 'products.destroy',
+            ]);
+        Route::resource('categories', AdminCategoryController::class)
+            ->except(['show', 'create', 'edit'])
+            ->parameters(['categories' => 'category'])
+            ->names([
+                'index' => 'categories',
+                'store' => 'categories.store',
+                'update' => 'categories.update',
+                'destroy' => 'categories.destroy',
             ]);
         Route::resource('customers', CustomerController::class)
             ->except(['show', 'create', 'edit'])

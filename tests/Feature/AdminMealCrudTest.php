@@ -4,6 +4,8 @@ use App\Models\Category;
 use App\Models\Employee;
 use App\Models\Meal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -19,6 +21,8 @@ function adminEmployeeForMeals(): Employee
 }
 
 it('lets admins create update and delete meals from dashboard', function (): void {
+    Storage::fake('public');
+
     $admin = adminEmployeeForMeals();
     $category = Category::query()->create(['name' => 'Bowls', 'is_active' => true]);
 
@@ -27,6 +31,7 @@ it('lets admins create update and delete meals from dashboard', function (): voi
             'category_id' => $category->id,
             'name' => 'Admin Salmon Bowl',
             'description' => 'Fresh salmon bowl',
+            'image' => UploadedFile::fake()->image('salmon.webp'),
             'price' => 150,
             'nutrition' => '{"protein":"35g"}',
             'ingredients' => '["salmon","rice"]',
@@ -36,9 +41,13 @@ it('lets admins create update and delete meals from dashboard', function (): voi
         ])->assertRedirect(route('admin.products'));
 
     $meal = Meal::query()->where('name', 'Admin Salmon Bowl')->firstOrFail();
+    $storedImagePath = substr((string) $meal->image, strlen('/storage/'));
 
     expect($meal->nutrition)->toBe(['protein' => '35g'])
-        ->and($meal->ingredients)->toBe(['salmon', 'rice']);
+        ->and($meal->ingredients)->toBe(['salmon', 'rice'])
+        ->and($meal->image)->toStartWith('/storage/meals/');
+
+    Storage::disk('public')->assertExists($storedImagePath);
 
     $this->actingAs($admin, 'employee')
         ->put(route('admin.products.update', $meal), [
@@ -51,7 +60,8 @@ it('lets admins create update and delete meals from dashboard', function (): voi
             'is_available' => '1',
         ])->assertRedirect(route('admin.products'));
 
-    expect($meal->fresh()->name)->toBe('Updated Salmon Bowl');
+    expect($meal->fresh()->name)->toBe('Updated Salmon Bowl')
+        ->and($meal->fresh()->image)->toBe('/storage/'.$storedImagePath);
 
     $this->actingAs($admin, 'employee')
         ->delete(route('admin.products.destroy', $meal))

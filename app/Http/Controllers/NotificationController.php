@@ -13,6 +13,7 @@ class NotificationController extends Controller
         return response()->json([
             'notifications' => $request->user()
                 ->notifications()
+                ->where('is_admin_visible', false)
                 ->latest()
                 ->paginate(20),
         ]);
@@ -21,6 +22,7 @@ class NotificationController extends Controller
     public function markAsRead(Request $request, Notification $notification): JsonResponse
     {
         abort_unless($notification->user_id === $request->user()->id, 404);
+        abort_if($notification->is_admin_visible, 404);
 
         $notification->update(['is_read' => true]);
 
@@ -32,7 +34,10 @@ class NotificationController extends Controller
 
     public function markAllAsRead(Request $request): JsonResponse
     {
-        $request->user()->notifications()->update(['is_read' => true]);
+        $request->user()
+            ->notifications()
+            ->where('is_admin_visible', false)
+            ->update(['is_read' => true]);
 
         return response()->json([
             'message' => 'All notifications marked as read.',

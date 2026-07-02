@@ -22,7 +22,7 @@ class Category extends Model implements AdminSearchable
 
     protected static string $adminSearchTitleColumn = 'name';
 
-    protected static string $adminSearchRouteName = 'admin.products';
+    protected static string $adminSearchRouteName = 'admin.categories';
 
     public function meals(): HasMany
     {
