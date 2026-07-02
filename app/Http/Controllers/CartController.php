@@ -2,91 +2,67 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Cart\StoreCartItemData;
+use App\DTOs\Cart\UpdateCartItemData;
+use App\Http\Requests\Cart\StoreCartItemRequest;
+use App\Http\Requests\Cart\UpdateCartItemRequest;
+use App\Http\Resources\CartItemResource;
 use App\Models\CartItem;
-use App\Models\Meal;
+use App\Services\CartService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
 {
+    use ApiResponse;
+
+    public function __construct(private readonly CartService $cartService) {}
+
     public function index(Request $request): JsonResponse
     {
-        $items = $request->user()
-            ->cartItems()
-            ->with('meal.category')
-            ->latest()
-            ->get();
+        $cart = $this->cartService->list($request->user());
 
-        return response()->json([
-            'cart_items' => $items,
-            'summary' => [
-                'subtotal' => round($items->sum(fn (CartItem $item): float => (float) $item->unit_price * $item->quantity), 2),
-                'items_count' => $items->sum('quantity'),
-            ],
+        return $this->success([
+            'cart_items' => CartItemResource::collection($cart['cart_items']),
+            'summary' => $cart['summary'],
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreCartItemRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'meal_id' => ['required', 'integer', 'exists:meals,id'],
-            'quantity' => ['nullable', 'integer', 'min:1'],
-        ]);
+        $item = $this->cartService->add($request->user(), StoreCartItemData::fromArray($request->validated()));
 
-        $meal = Meal::query()
-            ->where('id', $data['meal_id'])
-            ->where('is_available', true)
-            ->firstOrFail();
-
-        $quantity = $data['quantity'] ?? 1;
-
-        $item = CartItem::query()->firstOrNew([
-            'user_id' => $request->user()->id,
-            'meal_id' => $meal->id,
-        ]);
-
-        $item->quantity = ($item->exists ? $item->quantity : 0) + $quantity;
-        $item->unit_price = $meal->price;
-        $item->save();
-
-        return response()->json([
+        return $this->created([
             'message' => 'Meal added to cart.',
-            'cart_item' => $item->load('meal.category'),
-        ], 201);
+            'cart_item' => new CartItemResource($item),
+        ]);
     }
 
-    public function update(Request $request, CartItem $cartItem): JsonResponse
+    public function update(UpdateCartItemRequest $request, CartItem $cartItem): JsonResponse
     {
-        abort_unless($cartItem->user_id === $request->user()->id, 404);
+        $cartItem = $this->cartService->update($request->user(), $cartItem, UpdateCartItemData::fromArray($request->validated()));
 
-        $data = $request->validate([
-            'quantity' => ['required', 'integer', 'min:1'],
-        ]);
-
-        $cartItem->update(['quantity' => $data['quantity']]);
-
-        return response()->json([
+        return $this->success([
             'message' => 'Cart item updated.',
-            'cart_item' => $cartItem->load('meal.category'),
+            'cart_item' => new CartItemResource($cartItem),
         ]);
     }
 
     public function destroy(Request $request, CartItem $cartItem): JsonResponse
     {
-        abort_unless($cartItem->user_id === $request->user()->id, 404);
+        $this->cartService->remove($request->user(), $cartItem);
 
-        $cartItem->delete();
-
-        return response()->json([
+        return $this->success([
             'message' => 'Cart item removed.',
         ]);
     }
 
     public function clear(Request $request): JsonResponse
     {
-        $request->user()->cartItems()->delete();
+        $this->cartService->clear($request->user());
 
-        return response()->json([
+        return $this->success([
             'message' => 'Cart cleared.',
         ]);
     }

@@ -114,7 +114,7 @@ it('manages cart items and creates an order during checkout', function (): void 
     $this->actingAs($user, 'sanctum')
         ->postJson('/api/checkout', [
             'payment_method_id' => $paymentMethod->id,
-            'delivery_fee' => 30,
+            'delivery_fee' => 0,
             'delivery_address' => 'Giza',
         ])
         ->assertCreated()

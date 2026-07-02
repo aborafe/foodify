@@ -2,54 +2,43 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Favorite;
+use App\DTOs\Favorite\StoreFavoriteData;
+use App\Http\Requests\Favorite\StoreFavoriteRequest;
+use App\Http\Resources\FavoriteResource;
 use App\Models\Meal;
+use App\Services\FavoriteService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class FavoriteController extends Controller
 {
+    use ApiResponse;
+
+    public function __construct(private readonly FavoriteService $favoriteService) {}
+
     public function index(Request $request): JsonResponse
     {
-        return response()->json([
-            'favorites' => $request->user()
-                ->favorites()
-                ->with('meal.category')
-                ->latest()
-                ->paginate(20),
+        return $this->success([
+            'favorites' => FavoriteResource::collection($this->favoriteService->list($request->user())),
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreFavoriteRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'meal_id' => ['required', 'integer', 'exists:meals,id'],
-        ]);
+        $favorite = $this->favoriteService->add($request->user(), StoreFavoriteData::fromArray($request->validated()));
 
-        $meal = Meal::query()
-            ->where('id', $data['meal_id'])
-            ->where('is_available', true)
-            ->firstOrFail();
-
-        $favorite = Favorite::query()->firstOrCreate([
-            'user_id' => $request->user()->id,
-            'meal_id' => $meal->id,
-        ]);
-
-        return response()->json([
+        return $this->created([
             'message' => 'Meal added to favorites.',
-            'favorite' => $favorite->load('meal.category'),
-        ], 201);
+            'favorite' => new FavoriteResource($favorite),
+        ]);
     }
 
     public function destroy(Request $request, Meal $meal): JsonResponse
     {
-        $request->user()
-            ->favorites()
-            ->where('meal_id', $meal->id)
-            ->delete();
+        $this->favoriteService->remove($request->user(), $meal);
 
-        return response()->json([
+        return $this->success([
             'message' => 'Meal removed from favorites.',
         ]);
     }

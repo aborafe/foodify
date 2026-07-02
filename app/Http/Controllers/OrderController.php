@@ -2,47 +2,40 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\OrderResource;
 use App\Models\Order;
+use App\Services\OrderService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
+    use ApiResponse;
+
+    public function __construct(private readonly OrderService $orderService) {}
+
     public function index(Request $request): JsonResponse
     {
-        return response()->json([
-            'orders' => $request->user()
-                ->orders()
-                ->with(['orderItems', 'paymentMethod', 'payment'])
-                ->latest()
-                ->paginate(20),
+        return $this->success([
+            'orders' => OrderResource::collection($this->orderService->list($request->user())),
         ]);
     }
 
     public function show(Request $request, Order $order): JsonResponse
     {
-        abort_unless($order->user_id === $request->user()->id, 404);
-
-        return response()->json([
-            'order' => $order->load(['orderItems', 'paymentMethod', 'payment']),
+        return $this->success([
+            'order' => new OrderResource($this->orderService->show($request->user(), $order)),
         ]);
     }
 
     public function cancel(Request $request, Order $order): JsonResponse
     {
-        abort_unless($order->user_id === $request->user()->id, 404);
+        $order = $this->orderService->cancel($request->user(), $order);
 
-        if (! in_array($order->status, ['pending', 'confirmed'], true)) {
-            return response()->json([
-                'message' => 'This order cannot be cancelled.',
-            ], 422);
-        }
-
-        $order->update(['status' => 'cancelled']);
-
-        return response()->json([
+        return $this->success([
             'message' => 'Order cancelled.',
-            'order' => $order->fresh(),
+            'order' => new OrderResource($order),
         ]);
     }
 }

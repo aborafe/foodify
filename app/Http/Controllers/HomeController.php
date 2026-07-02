@@ -2,33 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
-use App\Models\Meal;
+use App\Http\Resources\CategoryResource;
+use App\Http\Resources\MealResource;
+use App\Services\CatalogService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class HomeController extends Controller
 {
+    use ApiResponse;
+
+    public function __construct(private readonly CatalogService $catalogService) {}
+
     public function __invoke(): JsonResponse
     {
-        return response()->json([
-            'categories' => Category::query()
-                ->where('is_active', true)
-                ->latest()
-                ->limit(8)
-                ->get(),
-            'recommended_meals' => Meal::query()
-                ->with('category')
-                ->where('is_available', true)
-                ->where('is_recommended', true)
-                ->latest()
-                ->limit(10)
-                ->get(),
-            'popular_meals' => Meal::query()
-                ->with('category')
-                ->where('is_available', true)
-                ->orderByDesc('rating')
-                ->limit(10)
-                ->get(),
+        $home = $this->catalogService->home();
+
+        return $this->success([
+            'categories' => CategoryResource::collection($home['categories']),
+            'recommended_meals' => MealResource::collection($home['recommended_meals']),
+            'popular_meals' => MealResource::collection($home['popular_meals']),
         ]);
     }
 }

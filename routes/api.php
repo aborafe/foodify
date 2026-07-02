@@ -14,12 +14,12 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function (): void {
-    Route::post('register', [AuthController::class, 'register']);
-    Route::post('verify-register-otp', [AuthController::class, 'verifyRegisterOtp']);
+    Route::post('register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+    Route::post('verify-register-otp', [AuthController::class, 'verifyRegisterOtp'])->middleware('throttle:10,1');
     Route::post('login', [AuthController::class, 'login']);
-    Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('verify-forgot-password-otp', [AuthController::class, 'verifyForgotPasswordOtp']);
-    Route::post('reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
+    Route::post('verify-forgot-password-otp', [AuthController::class, 'verifyForgotPasswordOtp'])->middleware('throttle:10,1');
+    Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:10,1');
 
     Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 });

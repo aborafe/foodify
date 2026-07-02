@@ -2,52 +2,46 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\PaymentMethod\StorePaymentMethodData;
+use App\Http\Requests\PaymentMethod\StorePaymentMethodRequest;
+use App\Http\Resources\PaymentMethodResource;
 use App\Models\PaymentMethod;
+use App\Services\PaymentMethodService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Gate;
 
 class PaymentMethodController extends Controller
 {
+    use ApiResponse;
+
+    public function __construct(private readonly PaymentMethodService $paymentMethodService) {}
+
     public function index(Request $request): JsonResponse
     {
-        return response()->json([
-            'payment_methods' => $request->user()
-                ->paymentMethods()
-                ->latest()
-                ->get(),
+        return $this->success([
+            'payment_methods' => PaymentMethodResource::collection($this->paymentMethodService->list($request->user())),
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StorePaymentMethodRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'type' => ['required', Rule::in(['card', 'wallet', 'net_banking', 'cash_on_delivery'])],
-            'card_brand' => ['nullable', 'string', 'max:255'],
-            'bank_name' => ['nullable', 'string', 'max:255'],
-            'last_four' => ['nullable', 'string', 'max:4'],
-            'is_default' => ['nullable', 'boolean'],
-        ]);
+        $paymentMethod = $this->paymentMethodService->create($request->user(), StorePaymentMethodData::fromArray($request->validated()));
 
-        if ($data['is_default'] ?? false) {
-            $request->user()->paymentMethods()->update(['is_default' => false]);
-        }
-
-        $paymentMethod = $request->user()->paymentMethods()->create($data);
-
-        return response()->json([
+        return $this->created([
             'message' => 'Payment method created.',
-            'payment_method' => $paymentMethod,
-        ], 201);
+            'payment_method' => new PaymentMethodResource($paymentMethod),
+        ]);
     }
 
     public function destroy(Request $request, PaymentMethod $paymentMethod): JsonResponse
     {
-        abort_unless($paymentMethod->user_id === $request->user()->id, 404);
+        Gate::authorize('delete', $paymentMethod);
 
-        $paymentMethod->delete();
+        $this->paymentMethodService->delete($paymentMethod);
 
-        return response()->json([
+        return $this->success([
             'message' => 'Payment method deleted.',
         ]);
     }

@@ -2,36 +2,34 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Profile\UpdateProfileData;
+use App\Http\Requests\Profile\UpdateProfileRequest;
+use App\Http\Resources\UserResource;
+use App\Services\ProfileService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
 {
+    use ApiResponse;
+
+    public function __construct(private readonly ProfileService $profileService) {}
+
     public function show(Request $request): JsonResponse
     {
-        return response()->json([
-            'user' => $request->user(),
+        return $this->success([
+            'user' => new UserResource($request->user()),
         ]);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(UpdateProfileRequest $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $this->profileService->update($request->user(), UpdateProfileData::fromArray($request->validated()));
 
-        $data = $request->validate([
-            'full_name' => ['sometimes', 'required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'birth_date' => ['nullable', 'date'],
-            'address' => ['nullable', 'string', 'max:255'],
-            'image' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        $user->update($data);
-
-        return response()->json([
+        return $this->success([
             'message' => 'Profile updated.',
-            'user' => $user->fresh(),
+            'user' => new UserResource($user),
         ]);
     }
 }

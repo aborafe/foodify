@@ -2,31 +2,31 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\CategoryResource;
+use App\Http\Resources\MealResource;
 use App\Models\Category;
+use App\Services\CatalogService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class CategoryController extends Controller
 {
+    use ApiResponse;
+
+    public function __construct(private readonly CatalogService $catalogService) {}
+
     public function index(): JsonResponse
     {
-        return response()->json([
-            'categories' => Category::query()
-                ->where('is_active', true)
-                ->latest()
-                ->paginate(20),
+        return $this->success([
+            'categories' => CategoryResource::collection($this->catalogService->categories()),
         ]);
     }
 
     public function meals(Category $category): JsonResponse
     {
-        abort_unless($category->is_active, 404);
-
-        return response()->json([
-            'category' => $category,
-            'meals' => $category->meals()
-                ->where('is_available', true)
-                ->latest()
-                ->paginate(20),
+        return $this->success([
+            'category' => new CategoryResource($category),
+            'meals' => MealResource::collection($this->catalogService->categoryMeals($category)),
         ]);
     }
 }

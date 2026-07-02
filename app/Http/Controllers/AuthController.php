@@ -8,7 +8,9 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\OtpVerificationRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
+use App\Http\Resources\UserResource;
 use App\Models\Otp;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +18,8 @@ use RuntimeException;
 
 class AuthController extends Controller
 {
+    use ApiResponse;
+
     public function __construct(private readonly AuthServiceInterface $authService) {}
 
     public function register(RegisterRequest $request): JsonResponse
@@ -23,17 +27,16 @@ class AuthController extends Controller
         try {
             [$user, $otp] = $this->authService->register($request->validated());
         } catch (RuntimeException $exception) {
-            return response()->json([
-                'message' => 'Unable to send OTP SMS.',
+            return $this->error('Unable to send OTP SMS.', 502, [
                 'error' => $exception->getMessage(),
-            ], 502);
+            ]);
         }
 
-        return response()->json([
+        return $this->created([
             'message' => 'Registered successfully. Please verify your phone number with the OTP sent by SMS.',
-            'user' => $user,
+            'user' => new UserResource($user),
             'otp' => $this->otpResponse($otp),
-        ], 201);
+        ]);
     }
 
     public function verifyRegisterOtp(OtpVerificationRequest $request): JsonResponse
@@ -48,9 +51,9 @@ class AuthController extends Controller
             ]);
         }
 
-        return response()->json([
+        return $this->success([
             'message' => 'Phone number verified successfully.',
-            'user' => $user,
+            'user' => new UserResource($user),
         ]);
     }
 
@@ -59,11 +62,11 @@ class AuthController extends Controller
         $data = $request->validated();
         $login = $this->authService->login($data['phone'], $data['password']);
 
-        return response()->json([
+        return $this->success([
             'message' => 'Logged in successfully.',
             'token' => $login['token'],
             'token_type' => 'Bearer',
-            'user' => $login['user'],
+            'user' => new UserResource($login['user']),
         ]);
     }
 
@@ -74,15 +77,14 @@ class AuthController extends Controller
         try {
             $otp = $this->authService->createPasswordResetOtp($data['phone']);
 
-            return response()->json([
+            return $this->success([
                 'message' => 'Password reset OTP sent by SMS successfully.',
                 'otp' => $this->otpResponse($otp),
             ]);
         } catch (RuntimeException $exception) {
-            return response()->json([
-                'message' => 'Unable to send OTP SMS.',
+            return $this->error('Unable to send OTP SMS.', 502, [
                 'error' => $exception->getMessage(),
-            ], 502);
+            ]);
         }
     }
 
@@ -98,7 +100,7 @@ class AuthController extends Controller
             ]);
         }
 
-        return response()->json([
+        return $this->success([
             'message' => 'Password reset OTP verified successfully.',
         ]);
     }
@@ -108,7 +110,7 @@ class AuthController extends Controller
         $data = $request->validated();
         $this->authService->resetPassword($data['phone'], $data['code'], $data['password']);
 
-        return response()->json([
+        return $this->success([
             'message' => 'Password reset successfully.',
         ]);
     }
@@ -117,7 +119,7 @@ class AuthController extends Controller
     {
         $request->user()?->currentAccessToken()?->delete();
 
-        return response()->json([
+        return $this->success([
             'message' => 'Logged out successfully.',
         ]);
     }
